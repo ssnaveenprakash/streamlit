@@ -1,66 +1,96 @@
-import altair as alt
-import pandas as pd
 import streamlit as st
 
-# Show the page title and description.
-st.set_page_config(page_title="Movies dataset", page_icon="🎬")
-st.title("🎬 Movies dataset")
-st.write(
-    """
-    This app visualizes data from [The Movie Database (TMDB)](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata).
-    It shows which movie genre performed best at the box office over the years. Just 
-    click on the widgets below to explore!
-    """
+st.set_page_config(layout="wide")
+st.title("Option Chain (Single Table)")
+
+# ───────────── Hardcoded Data (7 PUT, 7 CALL) ─────────────
+puts = [
+    {"Strike": 22400, "Open": 42,  "LTP": 55,  "OI": 62000},
+    {"Strike": 22300, "Open": 58,  "LTP": 71,  "OI": 81000},
+    {"Strike": 22200, "Open": 76,  "LTP": 68,  "OI": 102000},
+    {"Strike": 22100, "Open": 98,  "LTP": 112, "OI": 135000},
+    {"Strike": 22000, "Open": 120, "LTP": 98,  "OI": 155000},
+    {"Strike": 21900, "Open": 145, "LTP": 162, "OI": 140000},
+    {"Strike": 21800, "Open": 175, "LTP": 192, "OI": 110000},
+]
+
+calls = [
+    {"Strike": 21800, "Open": 185, "LTP": 210, "OI": 82000},
+    {"Strike": 21900, "Open": 150, "LTP": 165, "OI": 95000},
+    {"Strike": 22000, "Open": 120, "LTP": 145, "OI": 120000},
+    {"Strike": 22100, "Open": 95,  "LTP": 88,  "OI": 98000},
+    {"Strike": 22200, "Open": 70,  "LTP": 92,  "OI": 150000},
+    {"Strike": 22300, "Open": 52,  "LTP": 46,  "OI": 76000},
+    {"Strike": 22400, "Open": 38,  "LTP": 31,  "OI": 54000},
+]
+
+# ───────────── Precompute Max OI ─────────────
+max_oi = max(
+    max(p["OI"] for p in puts),
+    max(c["OI"] for c in calls)
 )
 
+# ───────────── Build Single Table ─────────────
+rows = []
 
-# Load the data from a CSV. We're caching this so it doesn't reload every time the app
-# reruns (e.g. if the user interacts with the widgets).
-@st.cache_data
-def load_data():
-    df = pd.read_csv("data/movies_genres_summary.csv")
-    return df
+for p, c in zip(puts, calls):
+    p_change = p["LTP"] - p["Open"]
+    c_change = c["LTP"] - c["Open"]
 
+    rows.append({
+        # PUT side
+        "PUT OI %": round((p["OI"] / max_oi) * 100, 2),
+        "PUT OI": f'{p["OI"]:,}',
+        "PUT Chg": round(p_change, 2),
+        "PUT %": round((p_change / p["Open"]) * 100, 2),
+        "PUT LTP": p["LTP"],
 
-df = load_data()
+        # STRIKE
+        "Strike": p["Strike"],
 
-# Show a multiselect widget with the genres using `st.multiselect`.
-genres = st.multiselect(
-    "Genres",
-    df.genre.unique(),
-    ["Action", "Adventure", "Biography", "Comedy", "Drama", "Horror"],
-)
+        # CALL side
+        "CALL LTP": c["LTP"],
+        "CALL %": round((c_change / c["Open"]) * 100, 2),
+        "CALL Chg": round(c_change, 2),
+        "CALL OI": f'{c["OI"]:,}',
+        "CALL OI %": round((c["OI"] / max_oi) * 100, 2),
+    })
 
-# Show a slider widget with the years using `st.slider`.
-years = st.slider("Years", 1986, 2006, (2000, 2016))
+# ───────────── Column Order (IMPORTANT) ─────────────
+column_order = [
+    "PUT OI %",
+    "PUT OI",
+    "PUT Chg",
+    "PUT %",
+    "PUT LTP",
+    "Strike",
+    "CALL LTP",
+    "CALL %",
+    "CALL Chg",
+    "CALL OI",
+    "CALL OI %",
+]
 
-# Filter the dataframe based on the widget input and reshape it.
-df_filtered = df[(df["genre"].isin(genres)) & (df["year"].between(years[0], years[1]))]
-df_reshaped = df_filtered.pivot_table(
-    index="year", columns="genre", values="gross", aggfunc="sum", fill_value=0
-)
-df_reshaped = df_reshaped.sort_values(by="year", ascending=False)
-
-
-# Display the data as a table using `st.dataframe`.
+# ───────────── Render Table ─────────────
 st.dataframe(
-    df_reshaped,
+    rows,
     use_container_width=True,
-    column_config={"year": st.column_config.TextColumn("Year")},
+    height=420,
+    column_order=column_order,
+    column_config={
+        "PUT OI %": st.column_config.ProgressColumn(
+            "PUT OI",
+            min_value=0,
+            max_value=100
+        ),
+        "CALL OI %": st.column_config.ProgressColumn(
+            "CALL OI",
+            min_value=0,
+            max_value=100
+        ),
+        "PUT Chg": st.column_config.NumberColumn("PUT Chg", format="+%.2f"),
+        "PUT %": st.column_config.NumberColumn("PUT %", format="+%.2f%%"),
+        "CALL Chg": st.column_config.NumberColumn("CALL Chg", format="+%.2f"),
+        "CALL %": st.column_config.NumberColumn("CALL %", format="+%.2f%%"),
+    }
 )
-
-# Display the data as an Altair chart using `st.altair_chart`.
-df_chart = pd.melt(
-    df_reshaped.reset_index(), id_vars="year", var_name="genre", value_name="gross"
-)
-chart = (
-    alt.Chart(df_chart)
-    .mark_line()
-    .encode(
-        x=alt.X("year:N", title="Year"),
-        y=alt.Y("gross:Q", title="Gross earnings ($)"),
-        color="genre:N",
-    )
-    .properties(height=320)
-)
-st.altair_chart(chart, use_container_width=True)
