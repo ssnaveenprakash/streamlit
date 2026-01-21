@@ -63,7 +63,7 @@ def nifty_heatmap_calendar():
                 row_html = "<div style='display:flex;gap:3px;'>"
                 for d in week:
                     if d == 0:
-                        row_html += "<div style='width:12px;height:12px;'></div>"
+                        row_html += "<div style='width:18px;height:12px;'></div>"
                     else:
                         pct = fake_pct()
                         color = color_for_move(pct)
