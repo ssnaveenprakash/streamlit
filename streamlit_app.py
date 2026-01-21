@@ -69,7 +69,7 @@ def nifty_heatmap_calendar():
                         color = color_for_move(pct)
                         row_html += (
                             f"<div title='{pct:+.2f}%' "
-                            f"style='width:12px;height:12px;"
+                            f"style='width:18px;height:12px;"
                             f"background:{color};"
                             f"border-radius:2px;'></div>"
                         )
