@@ -1,5 +1,7 @@
 import streamlit as st
 import random
+import calendar
+from datetime import date
 
 # ───────────────── Page Setup ─────────────────
 st.set_page_config(layout="wide")
@@ -14,6 +16,60 @@ def gen_option():
     ltp = max(1, open_price + random.randint(-15, 15))
     oi = random.randint(50_000, 180_000)
     return open_price, ltp, oi
+
+@st.fragment
+def nifty_year_calendar():
+
+    st.subheader("📅 NIFTY Yearly Calendar")
+
+    # ───── Year Selector ─────
+    year = st.selectbox(
+        "Select Year",
+        options=[2022, 2023, 2024, 2025],
+        index=2
+    )
+
+    cal = calendar.Calendar(firstweekday=0)
+
+    # ───── Helper: generate fake % move ─────
+    def nifty_move():
+        return round(random.uniform(-2.0, 2.0), 2)
+
+    # ───── Render Months ─────
+    for month in range(1, 13):
+        st.markdown(f"### {calendar.month_name[month]} {year}")
+
+        # Weekday header
+        week_cols = st.columns(7)
+        for i, day in enumerate(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]):
+            week_cols[i].markdown(f"**{day}**")
+
+        # Month dates
+        for week in cal.monthdayscalendar(year, month):
+            cols = st.columns(7)
+            for i, d in enumerate(week):
+                if d == 0:
+                    cols[i].markdown(" ")
+                else:
+                    pct = nifty_move()
+                    emoji = "🟢" if pct > 0 else "🔴" if pct < 0 else "⚪"
+
+                    cols[i].markdown(
+                        f"""
+                        <div style="
+                            text-align:center;
+                            padding:6px;
+                            border-radius:6px;
+                            font-size:13px;
+                        ">
+                            <b>{d}</b><br>
+                            {emoji} {pct:+.2f}%
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+        st.divider()
 
 
 # ───────────────── NIFTY CARD (AUTO REFRESH) ─────────────────
@@ -134,3 +190,4 @@ def option_chain_fragment():
 # ───────────────── Run Fragment ─────────────────
 nifty_card()
 option_chain_fragment()
+nifty_year_calendar()
