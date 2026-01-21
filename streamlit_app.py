@@ -9,6 +9,10 @@ st.title("Live Option Chain (Simulated)")
 REFRESH_SEC = 2
 st.caption(f"Auto refresh every {REFRESH_SEC} seconds")
 
+# ───────────────── Session State Tick ─────────────────
+if "tick" not in st.session_state:
+    st.session_state.tick = 0
+
 # ───────────────── Base Strikes ─────────────────
 strikes = [21800, 21900, 22000, 22100, 22200, 22300, 22400]
 
@@ -30,13 +34,13 @@ for strike in strikes:
     puts[strike] = {"Open": p_open, "LTP": p_ltp, "OI": p_oi}
     calls[strike] = {"Open": c_open, "LTP": c_ltp, "OI": c_oi}
 
-# ───────────────── Max OI (for normalization) ─────────────────
+# ───────────────── Max OI (normalize) ─────────────────
 max_oi = max(
     max(v["OI"] for v in puts.values()),
     max(v["OI"] for v in calls.values())
 )
 
-# ───────────────── Build Option Chain Rows ─────────────────
+# ───────────────── Build Table Rows ─────────────────
 rows = []
 
 for strike in strikes:
@@ -47,17 +51,14 @@ for strike in strikes:
     c_chg = c["LTP"] - c["Open"]
 
     rows.append({
-        # PUT side
         "PUT OI %": round((p["OI"] / max_oi) * 100, 2),
         "PUT OI": f'{p["OI"]:,}',
         "PUT Chg": round(p_chg, 2),
         "PUT %": round((p_chg / p["Open"]) * 100, 2),
         "PUT LTP": p["LTP"],
 
-        # STRIKE
         "Strike": strike,
 
-        # CALL side
         "CALL LTP": c["LTP"],
         "CALL %": round((c_chg / c["Open"]) * 100, 2),
         "CALL Chg": round(c_chg, 2),
@@ -85,14 +86,10 @@ st.dataframe(
     ],
     column_config={
         "PUT OI %": st.column_config.ProgressColumn(
-            "PUT OI",
-            min_value=0,
-            max_value=100
+            "PUT OI", min_value=0, max_value=100
         ),
         "CALL OI %": st.column_config.ProgressColumn(
-            "CALL OI",
-            min_value=0,
-            max_value=100
+            "CALL OI", min_value=0, max_value=100
         ),
         "PUT Chg": st.column_config.NumberColumn("PUT Chg", format="+%.2f"),
         "PUT %": st.column_config.NumberColumn("PUT %", format="+%.2f%%"),
@@ -101,6 +98,6 @@ st.dataframe(
     }
 )
 
-# ───────────────── Safe Auto Refresh ─────────────────
+# ───────────────── Auto Update (Version-Safe) ─────────────────
 time.sleep(REFRESH_SEC)
-st.experimental_rerun()
+st.session_state.tick += 1
