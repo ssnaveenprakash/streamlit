@@ -18,6 +18,49 @@ def gen_option():
     oi = random.randint(50_000, 180_000)
     return open_price, ltp, oi
 
+
+# ───────────────── NIFTY CARD (AUTO REFRESH) ─────────────────
+@st.fragment(run_every="1s")
+def nifty_card():
+
+    # Base price (simulate index)
+    base_price = 22000
+
+    # Simulate open & movement
+    open_price = base_price + random.randint(-50, 50)
+    ltp = open_price + random.randint(-120, 120)
+
+    day_high = max(open_price, ltp) + random.randint(0, 40)
+    day_low  = min(open_price, ltp) - random.randint(0, 40)
+
+    change = ltp - open_price
+    pct = (change / open_price) * 100
+
+    # ───────── Card UI ─────────
+    col1, col2, col3, col4 = st.columns(4)
+
+    col1.metric(
+        label="NIFTY 50",
+        value=f"{ltp:,.2f}",
+        delta=f"{change:+.2f}"
+    )
+
+    col2.metric(
+        label="Today's % Move",
+        value=f"{pct:+.2f}%"
+    )
+
+    col3.metric(
+        label="Day Range",
+        value=f"{day_low:,.0f} → {day_high:,.0f}"
+    )
+
+    col4.metric(
+        label="Status",
+        value="Bullish 🟢" if change >= 0 else "Bearish 🔴"
+    )
+
+
 # ───────────────── Fragment (AUTO REFRESH) ─────────────────
 @st.fragment(run_every="1s")
 def option_chain_fragment():
@@ -97,4 +140,5 @@ def option_chain_fragment():
     )
 
 # ───────────────── Run Fragment ─────────────────
+nifty_card()
 option_chain_fragment()
