@@ -191,7 +191,19 @@ def option_chain_fragment():
         }
     )
 
+tab1, tab2, tab3 = st.tabs(
+    ["📈 NIFTY Snapshot", "🧾 Option Chain", "📊 Yearly Heatmap"]
+)
+
+with tab1:
+    nifty_card()
+
+with tab2:
+    option_chain_fragment()
+
+with tab3:
+    nifty_heatmap_calendar()
 # ───────────────── Run Fragment ─────────────────
-nifty_card()
-option_chain_fragment()
-nifty_heatmap_calendar()
+# nifty_card()
+# option_chain_fragment()
+# nifty_heatmap_calendar()
