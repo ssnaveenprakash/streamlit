@@ -6,6 +6,10 @@ import time
 st.set_page_config(layout="wide")
 st.title("Live Option Chain (Simulated)")
 
+st.title("Streamlit Version Check")
+
+st.write("Streamlit version:", st.__version__)
+
 REFRESH_SEC = 2
 st.caption(f"Auto refresh every {REFRESH_SEC} seconds")
 
