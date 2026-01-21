@@ -3,10 +3,7 @@ import random
 
 # ───────────────── Page Setup ─────────────────
 st.set_page_config(layout="wide")
-st.title("Live Option Chain (Simulated)")
-
-st.caption(f"Streamlit version: {st.__version__}")
-st.caption("Auto refresh every 1 second (using fragments)")
+st.title("Trading panel")
 
 # ───────────────── Base Strikes ─────────────────
 strikes = [21800, 21900, 22000, 22100, 22200, 22300, 22400]
@@ -52,12 +49,7 @@ def nifty_card():
 
     col3.metric(
         label="Day Range",
-        value=f"{day_low:,.0f} → {day_high:,.0f}"
-    )
-
-    col4.metric(
-        label="Status",
-        value="Bullish 🟢" if change >= 0 else "Bearish 🔴"
+        value=f"{ltp - open_price:+.2f}"
     )
 
 
