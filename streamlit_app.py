@@ -18,11 +18,10 @@ def gen_option():
     return open_price, ltp, oi
 
 @st.fragment
-def nifty_year_calendar():
+def nifty_heatmap_calendar():
 
-    st.subheader("📅 NIFTY Yearly Calendar")
+    st.subheader("📊 NIFTY Yearly Heatmap")
 
-    # ───── Year Selector ─────
     year = st.selectbox(
         "Select Year",
         options=[2022, 2023, 2024, 2025],
@@ -31,46 +30,51 @@ def nifty_year_calendar():
 
     cal = calendar.Calendar(firstweekday=0)
 
-    # ───── Helper: generate fake % move ─────
-    def nifty_move():
-        return round(random.uniform(-2.0, 2.0), 2)
+    # ---- Color mapping ----
+    def color_for_move(pct):
+        if pct >= 1.0:
+            return "#2ecc71"   # strong green
+        elif pct >= 0.3:
+            return "#a9dfbf"   # light green
+        elif pct <= -1.0:
+            return "#e74c3c"   # strong red
+        elif pct <= -0.3:
+            return "#f5b7b1"   # light red
+        else:
+            return "#eeeeee"   # neutral
 
-    # ───── Render Months ─────
-    for month in range(1, 13):
-        st.markdown(f"### {calendar.month_name[month]} {year}")
+    def fake_pct():
+        return round(random.uniform(-2, 2), 2)
 
-        # Weekday header
-        week_cols = st.columns(7)
-        for i, day in enumerate(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]):
-            week_cols[i].markdown(f"**{day}**")
+    # ---- Month layout (12 columns) ----
+    month_cols = st.columns(12)
 
-        # Month dates
-        for week in cal.monthdayscalendar(year, month):
-            cols = st.columns(7)
-            for i, d in enumerate(week):
-                if d == 0:
-                    cols[i].markdown(" ")
-                else:
-                    pct = nifty_move()
-                    emoji = "🟢" if pct > 0 else "🔴" if pct < 0 else "⚪"
+    for m in range(1, 13):
+        with month_cols[m - 1]:
+            st.markdown(
+                f"<div style='text-align:center;font-size:13px;margin-bottom:6px;'>"
+                f"<b>{calendar.month_abbr[m]}</b></div>",
+                unsafe_allow_html=True
+            )
 
-                    cols[i].markdown(
-                        f"""
-                        <div style="
-                            text-align:center;
-                            padding:6px;
-                            border-radius:6px;
-                            font-size:13px;
-                        ">
-                            <b>{d}</b><br>
-                            {emoji} {pct:+.2f}%
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
+            weeks = cal.monthdayscalendar(year, m)
 
-        st.divider()
-
+            for week in weeks:
+                row_html = "<div style='display:flex;gap:3px;'>"
+                for d in week:
+                    if d == 0:
+                        row_html += "<div style='width:12px;height:12px;'></div>"
+                    else:
+                        pct = fake_pct()
+                        color = color_for_move(pct)
+                        row_html += (
+                            f"<div title='{pct:+.2f}%' "
+                            f"style='width:12px;height:12px;"
+                            f"background:{color};"
+                            f"border-radius:2px;'></div>"
+                        )
+                row_html += "</div>"
+                st.markdown(row_html, unsafe_allow_html=True)
 
 # ───────────────── NIFTY CARD (AUTO REFRESH) ─────────────────
 @st.fragment(run_every="1s")
@@ -190,4 +194,4 @@ def option_chain_fragment():
 # ───────────────── Run Fragment ─────────────────
 nifty_card()
 option_chain_fragment()
-nifty_year_calendar()
+nifty_heatmap_calendar()
