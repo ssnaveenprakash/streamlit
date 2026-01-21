@@ -5,35 +5,36 @@ import time
 st.set_page_config(layout="wide")
 st.title("Live Option Chain (Simulated)")
 
-# ───────────── Auto Refresh ─────────────
 REFRESH_SEC = 2
 st.caption(f"Auto refresh every {REFRESH_SEC} seconds")
-st.autorefresh(interval=REFRESH_SEC * 1000, key="refresh")
 
 # ───────────── Base Strikes ─────────────
 strikes = [21800, 21900, 22000, 22100, 22200, 22300, 22400]
 
-# ───────────── Random Option Generator ─────────────
-def gen_option(base_price):
+# ───────────── Random Generator ─────────────
+def gen_option():
     open_price = random.randint(40, 180)
     ltp = max(1, open_price + random.randint(-15, 15))
     oi = random.randint(50_000, 180_000)
-    return {
-        "Open": open_price,
-        "LTP": ltp,
-        "OI": oi
-    }
+    return open_price, ltp, oi
 
-puts = {s: gen_option(s) for s in strikes[::-1]}
-calls = {s: gen_option(s) for s in strikes}
+puts = {}
+calls = {}
 
-# ───────────── Max OI for Scaling ─────────────
+for s in strikes:
+    p_open, p_ltp, p_oi = gen_option()
+    c_open, c_ltp, c_oi = gen_option()
+
+    puts[s] = {"Open": p_open, "LTP": p_ltp, "OI": p_oi}
+    calls[s] = {"Open": c_open, "LTP": c_ltp, "OI": c_oi}
+
+# ───────────── Max OI ─────────────
 max_oi = max(
     max(v["OI"] for v in puts.values()),
     max(v["OI"] for v in calls.values())
 )
 
-# ───────────── Build Single Table ─────────────
+# ───────────── Build Table ─────────────
 rows = []
 
 for strike in strikes:
@@ -59,27 +60,24 @@ for strike in strikes:
         "CALL OI %": round((c["OI"] / max_oi) * 100, 2),
     })
 
-# ───────────── Column Order ─────────────
-column_order = [
-    "PUT OI %",
-    "PUT OI",
-    "PUT Chg",
-    "PUT %",
-    "PUT LTP",
-    "Strike",
-    "CALL LTP",
-    "CALL %",
-    "CALL Chg",
-    "CALL OI",
-    "CALL OI %",
-]
-
-# ───────────── Render Table ─────────────
+# ───────────── Render ─────────────
 st.dataframe(
     rows,
     use_container_width=True,
     height=420,
-    column_order=column_order,
+    column_order=[
+        "PUT OI %",
+        "PUT OI",
+        "PUT Chg",
+        "PUT %",
+        "PUT LTP",
+        "Strike",
+        "CALL LTP",
+        "CALL %",
+        "CALL Chg",
+        "CALL OI",
+        "CALL OI %",
+    ],
     column_config={
         "PUT OI %": st.column_config.ProgressColumn("PUT OI", 0, 100),
         "CALL OI %": st.column_config.ProgressColumn("CALL OI", 0, 100),
@@ -89,3 +87,7 @@ st.dataframe(
         "CALL %": st.column_config.NumberColumn("CALL %", format="+%.2f%%"),
     }
 )
+
+# ───────────── Safe Auto Refresh ─────────────
+time.sleep(REFRESH_SEC)
+st.experimental_rerun()
